@@ -220,7 +220,7 @@ function sendNotification(task) {
   if (Notification.permission === 'granted') {
     new Notification(`Tarefa às ${task.time}`, {
       body: `${task.description}${task.recurring !== 'none' ? ' (Recorrente)' : ''}`,
-      icon: 'https://cdn-icons-png.flaticon.com/512/1827/1827565.png'
+      icon: 'https://cdn-icons-png.flaticon.com/512/1827/1827504.png'
     });
   }
 }
