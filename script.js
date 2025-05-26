@@ -214,7 +214,7 @@ setInterval(() => {
       sendNotification(task);
     }
   });
-}, 60000);
+}, 5000);
 
 function sendNotification(task) {
   if (Notification.permission === 'granted') {
