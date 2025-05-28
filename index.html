@@ -1,61 +1,53 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calendário de Tarefas</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <title>Checklist de Manutenção</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/747/747310.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
-<body>
-
-  <div class="calendar">
-    <h1>Calendário de Tarefas</h1>
-
-    <div class="task-form">
-      <input type="date" id="taskDate" />
-      <input type="time" id="taskTime" />
-      <input type="text" id="taskDescription" placeholder="Descrição" />
-      <select id="taskRecurring">
-        <option value="none">Não recorrente</option>
-        <option value="daily">Diária</option>
-        <option value="weekly">Semanal</option>
-        <option value="monthly">Mensal</option>
-      </select>
-      <button onclick="addTask()">Adicionar</button>
-      <button onclick="openTaskManager()">Gerenciar Tarefas</button>
-    </div>
-
+<body data-theme="light">
+  <div class="container">
     <div class="header">
-      <button id="prevMonth">◀</button>
-      <h2 id="monthYear"></h2>
-      <button id="nextMonth">▶</button>
+      <div class="header-left">
+        <img src="https://cdn-icons-png.flaticon.com/512/747/747310.png" class="logo" alt="logo">
+        <h2>Checklist de Manutenção</h2>
+        <div>
+          <label for="tecnico">Nome do Técnico:</label>
+          <input type="text" id="tecnico" placeholder="Nome do Técnico">
+        </div>
+        <div>
+          <label for="matricula">Matrícula:</label>
+          <input type="text" id="matricula" placeholder="Matrícula">
+        </div>
+        <input type="date" id="data">
+      </div>
+      <div class="header-right">
+        <button onclick="addItem()">➕ Adicionar Item</button>
+        <button onclick="saveData()">💾 Backup</button>
+        <button onclick="loadData()">📂 Importar</button>
+        <button onclick="share()">📤 Compartilhar</button>
+        <button onclick="exportPDF()">📄 PDF</button>
+        <button onclick="window.print()">🖨️ Imprimir</button>
+        <button class="theme-toggle" onclick="toggleTheme()">🌓 Tema</button>
+      </div>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Dom</th>
-          <th>Seg</th>
-          <th>Ter</th>
-          <th>Qua</th>
-          <th>Qui</th>
-          <th>Sex</th>
-          <th>Sáb</th>
-        </tr>
-      </thead>
-      <tbody id="calendarBody"></tbody>
-    </table>
+    <div class="progress">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div id="checklist"></div>
+
+    <h3>Assinatura:</h3>
+    <canvas id="signature" width="400" height="200"></canvas><br>
+    <button onclick="clearSignature()">🗑️ Limpar Assinatura</button>
   </div>
 
-  <!-- Modal -->
-  <div id="taskModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Gerenciar Tarefas</h3>
-        <span class="close" onclick="closeTaskManager()">&times;</span>
-      </div>
-      <div id="taskList"></div>
-    </div>
+  <div class="zoom-overlay" id="zoomOverlay" onclick="closeZoom()">
+    <img id="zoomImage">
   </div>
 
   <script src="script.js"></script>
