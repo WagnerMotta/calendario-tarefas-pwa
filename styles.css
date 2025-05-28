@@ -1,5 +1,31 @@
+:root {
+  --bg: #f0f2f5;
+  --text: #333;
+  --card: #fff;
+  --border: #ccc;
+  --primary: #007bff;
+  --primary-hover: #0056b3;
+  --progress: #28a745;
+  --status-completo: #28a745;
+  --status-pendente: #dc3545;
+  --status-em-andamento: #ffc107;
+}
+[data-theme="dark"] {
+  --bg: #181a1b;
+  --text: #ddd;
+  --card: #242526;
+  --border: #444;
+  --primary: #0d6efd;
+  --primary-hover: #0b5ed7;
+  --progress: #00c851;
+  --status-completo: #00c851;
+  --status-pendente: #ff4444;
+  --status-em-andamento: #ffbb33;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: var(--bg);
   color: var(--text);
   padding: 20px;
@@ -34,6 +60,9 @@ body {
   border-radius: 50%;
 }
 h2 { color: var(--text); }
+.header-left input, .header-left label {
+  font-size: 0.9rem;
+}
 .header-left input {
   padding: 8px;
   border-radius: 6px;
@@ -41,7 +70,6 @@ h2 { color: var(--text); }
   background: var(--card);
   color: var(--text);
 }
-label { margin-right: 5px; }
 .header-right {
   display: flex;
   gap: 8px;
@@ -55,6 +83,11 @@ button {
   color: white;
   cursor: pointer;
   box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
 }
 button:hover {
   background: var(--primary-hover);
@@ -75,11 +108,16 @@ textarea {
   resize: vertical;
   background: var(--bg);
   color: var(--text);
+  font-size: 0.95rem;
+  margin-top: 6px;
+  margin-bottom: 10px;
 }
 .photo-group {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  margin-top: 10px;
+  margin-bottom: 12px;
 }
 .photo-block {
   flex: 1 1 200px;
@@ -93,9 +131,10 @@ textarea {
   display: none;
   cursor: zoom-in;
   box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  margin-top: 6px;
 }
 .progress {
-  margin: 10px 0;
+  margin: 10px 0 20px 0;
   background: var(--border);
   height: 10px;
   border-radius: 5px;
@@ -111,12 +150,14 @@ canvas {
   background: var(--card);
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   border-radius: 8px;
+  margin-top: 10px;
 }
 .theme-toggle {
   background: var(--card);
   color: var(--text);
   border: 1px solid var(--border);
 }
+
 /* Zoom overlay */
 .zoom-overlay {
   display: none;
@@ -136,52 +177,61 @@ canvas {
   box-shadow: 0 0 20px #000;
   cursor: zoom-out;
 }
-@media (max-width: 600px) {
-  .photo-group { flex-direction: column; }
-  .photo-block { flex: 1 1 100%; }
+
+/* Status button styles */
+.status-btn {
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  transition: background-color 0.3s ease;
 }
-</style>
-</head>
-<body data-theme="light">
+.status-completo {
+  background-color: var(--status-completo);
+  color: white;
+}
+.status-pendente {
+  background-color: var(--status-pendente);
+  color: white;
+}
+.status-em-andamento {
+  background-color: var(--status-em-andamento);
+  color: #212529;
+}
 
-<div class="container">
-  <div class="header">
-    <div class="header-left">
-      <img src="https://cdn-icons-png.flaticon.com/512/747/747310.png" class="logo">
-      <h2>Checklist de Manutenção</h2>
-      <div>
-        <label>Nome do Técnico:</label>
-        <input type="text" id="tecnico" placeholder="Nome do Técnico">
-      </div>
-      <div>
-        <label>Matrícula:</label>
-        <input type="text" id="matricula" placeholder="Matrícula">
-      </div>
-      <input type="date" id="data">
-    </div>
-    <div class="header-right">
-      <button onclick="addItem()">➕ Adicionar Item</button>
-      <button onclick="saveData()">💾 Backup</button>
-      <button onclick="loadData()">📂 Importar</button>
-      <button onclick="share()">📤 Compartilhar</button>
-      <button onclick="exportPDF()">📄 PDF</button>
-      <button onclick="window.print()">🖨️ Imprimir</button>
-      <button class="theme-toggle" onclick="toggleTheme()">🌓 Tema</button>
-    </div>
-  </div>
+/* Container dos botões no título do item */
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.item-buttons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
 
-  <div class="progress">
-    <div class="progress-bar" id="progressBar"></div>
-  </div>
-
-  <div id="checklist"></div>
-
-  <h3>Assinatura:</h3>
-  <canvas id="signature" width="400" height="200"></canvas><br>
-  <button onclick="clearSignature()">🗑️ Limpar Assinatura</button>
-</div>
-
-<!-- Zoom Overlay -->
-<div class="zoom-overlay" id="zoomOverlay" onclick="closeZoom()">
-  <img id="zoomImage">
-</div>
+/* Botão de excluir */
+.remove-btn {
+  background-color: #dc3545;
+  color: white;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-weight: bold;
+  font-size: 18px;
+  line-height: 28px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
+.remove-btn:hover {
+  background-color: #a71d2a;
+}
