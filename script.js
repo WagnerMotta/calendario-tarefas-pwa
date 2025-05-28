@@ -1,197 +1,239 @@
 let itemCount = 0;
-const checklist = document.getElementById('checklist');
 
 function addItem(data = null) {
   itemCount++;
-  const item = document.createElement('div');
-  item.className = 'check-item';
-  item.dataset.id = itemCount;
+  const checklist = document.getElementById('checklist');
 
-  let photos = '';
-  for (let j = 1; j <= 2; j++) {
-    photos += `
-      <div class="photo-block">
-        <label>Foto ${j}</label>
-        <input type="file" accept="image/*" id="foto${itemCount}_${j}">
-        <img id="preview${itemCount}_${j}" alt="preview${itemCount}_${j}">
-        <label>Observação da Foto ${j}:</label>
-        <textarea id="obs${itemCount}_${j}" placeholder="Observações da foto..."></textarea>
+  const div = document.createElement('div');
+  div.className = 'check-item';
+  div.dataset.id = itemCount;
+  div.dataset.status = data?.status || 'completo';
+
+  div.innerHTML = `
+    <div class="item-header">
+      <input type="text" class="item-title" placeholder="Título do item" value="${data?.title || ''}" />
+      <div class="item-buttons">
+        <button class="status-btn ${div.dataset.status === 'completo' ? 'status-completo' : div.dataset.status === 'pendente' ? 'status-pendente' : 'status-em-andamento'}" 
+                onclick="toggleStatus(${itemCount}, this)" 
+                title="Alterar status do item">
+          ${statusText(div.dataset.status)}
+        </button>
+        <button class="remove-btn" onclick="removeItem(${itemCount})" title="Remover item">×</button>
       </div>
-    `;
-  }
-
-  item.innerHTML = `
-    <h3>Item ${itemCount} <button onclick="removeItem(${itemCount})" style="float:right;">❌</button></h3>
-    <div class="photo-group">${photos}</div>
-    <label>Comentário Geral:</label>
-    <textarea id="comentario${itemCount}" placeholder="Observações..."></textarea>
+    </div>
+    <textarea placeholder="Comentário" class="comment">${data?.comment || ''}</textarea>
+    <div class="photo-group">
+      <div class="photo-block">
+        <input type="file" accept="image/*" onchange="loadPhoto(event, ${itemCount}, 'preview')" title="Adicionar foto de preview" />
+        <img src="${data?.preview || ''}" alt="Preview" onclick="zoomImage(this)" />
+        <textarea placeholder="Observação foto preview" class="photo-note">${data?.previewNote || ''}</textarea>
+      </div>
+      <div class="photo-block">
+        <input type="file" accept="image/*" onchange="loadPhoto(event, ${itemCount}, 'obs')" title="Adicionar foto de observação" />
+        <img src="${data?.obs || ''}" alt="Observação" onclick="zoomImage(this)" />
+        <textarea placeholder="Observação foto" class="photo-note">${data?.obsNote || ''}</textarea>
+      </div>
+    </div>
   `;
-  checklist.appendChild(item);
+  checklist.appendChild(div);
+  updateProgress();
+}
 
-  for (let j = 1; j <= 2; j++) {
-    const inputId = `foto${itemCount}_${j}`;
-    const previewId = `preview${itemCount}_${j}`;
-    const fileInput = item.querySelector(`#${inputId}`);
-    const previewImg = item.querySelector(`#${previewId}`);
-
-    fileInput.addEventListener('change', function () {
-      const file = this.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          previewImg.src = e.target.result;
-          previewImg.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+function statusText(status) {
+  switch(status) {
+    case 'completo': return '✔️ Concluído';
+    case 'pendente': return '❌ Pendência';
+    case 'em-andamento': return '⏳ Em andamento';
+    default: return '❓ Status';
   }
+}
 
-  item.querySelector(`#comentario${itemCount}`).addEventListener('input', updateProgress);
+function toggleStatus(id, btn) {
+  const item = document.querySelector(`.check-item[data-id="${id}"]`);
+  const current = btn.classList.contains('status-completo') ? 'completo' :
+                  btn.classList.contains('status-pendente') ? 'pendente' :
+                  'em-andamento';
+  let next = 'completo';
+  if(current === 'completo') next = 'pendente';
+  else if(current === 'pendente') next = 'em-andamento';
+  else if(current === 'em-andamento') next = 'completo';
 
-  if (data) {
-    for (let j = 1; j <= 2; j++) {
-      const img = item.querySelector(`#preview${itemCount}_${j}`);
-      if (data[`foto${itemCount}_${j}`]) {
-        img.src = data[`foto${itemCount}_${j}`];
-        img.style.display = 'block';
-      }
-      item.querySelector(`#obs${itemCount}_${j}`).value = data[`obs${itemCount}_${j}`] || '';
-    }
-    item.querySelector(`#comentario${itemCount}`).value = data[`comentario${itemCount}`] || '';
+  btn.textContent = statusText(next);
+  btn.className = 'status-btn ' + (next === 'completo' ? 'status-completo' : next === 'pendente' ? 'status-pendente' : 'status-em-andamento');
+  if(item) {
+    item.dataset.status = next;
   }
-
   updateProgress();
 }
 
 function removeItem(id) {
-  document.querySelector(`[data-id='${id}']`)?.remove();
-  updateProgress();
+  if(confirm('Tem certeza que deseja remover este item?')) {
+    const item = document.querySelector(`.check-item[data-id="${id}"]`);
+    if(item) {
+      item.remove();
+      updateProgress();
+    }
+  }
 }
 
 function updateProgress() {
-  const total = document.querySelectorAll('.check-item').length;
-  const filled = Array.from(document.querySelectorAll('textarea')).filter(t => t.value.trim() !== '').length;
-  const percent = total ? (filled / total) * 100 : 0;
+  const checklist = document.getElementById('checklist');
+  const items = checklist.querySelectorAll('.check-item');
+  if(items.length === 0) {
+    document.getElementById('progressBar').style.width = '0%';
+    return;
+  }
+  const completed = Array.from(items).filter(i => i.dataset.status === 'completo').length;
+  const percent = Math.round((completed / items.length) * 100);
   document.getElementById('progressBar').style.width = percent + '%';
 }
 
+function loadPhoto(event, id, type) {
+  const input = event.target;
+  const file = input.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const item = document.querySelector(`.check-item[data-id="${id}"]`);
+    if(!item) return;
+    const img = item.querySelector(`img[alt="${type === 'preview' ? 'Preview' : 'Observação'}"]`);
+    if(img) {
+      img.src = e.target.result;
+      img.style.display = 'block';
+    }
+  }
+  reader.readAsDataURL(file);
+}
+
+function zoomImage(img) {
+  const overlay = document.getElementById('zoomOverlay');
+  const zoomImg = document.getElementById('zoomImage');
+  zoomImg.src = img.src;
+  overlay.style.display = 'flex';
+}
+
+function closeZoom() {
+  document.getElementById('zoomOverlay').style.display = 'none';
+}
+
+// Assinatura no canvas
+const canvas = document.getElementById('signature');
+const ctx = canvas.getContext('2d');
+let drawing = false;
+
+canvas.addEventListener('mousedown', () => drawing = true);
+canvas.addEventListener('mouseup', () => drawing = false);
+canvas.addEventListener('mouseout', () => drawing = false);
+canvas.addEventListener('mousemove', draw);
+
+function draw(event) {
+  if(!drawing) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = 'black';
+
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+}
+
+function clearSignature() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// Salvar dados no localStorage
 function saveData() {
   const data = {
     tecnico: document.getElementById('tecnico').value,
     matricula: document.getElementById('matricula').value,
     data: document.getElementById('data').value,
     items: [],
-    signature: canvas.toDataURL()
+    assinatura: canvas.toDataURL()
   };
+
   document.querySelectorAll('.check-item').forEach(item => {
     const id = item.dataset.id;
-    const itemData = {};
-    for (let j = 1; j <= 2; j++) {
-      const img = item.querySelector(`#preview${id}_${j}`);
-      itemData[`foto${id}_${j}`] = img.src || '';
-      itemData[`obs${id}_${j}`] = item.querySelector(`#obs${id}_${j}`).value;
-    }
-    itemData[`comentario${id}`] = item.querySelector(`#comentario${id}`).value;
-    data.items.push(itemData);
+    const title = item.querySelector('.item-title').value;
+    const comment = item.querySelector('.comment').value;
+    const status = item.dataset.status;
+    const preview = item.querySelector('img[alt="Preview"]').src || '';
+    const obs = item.querySelector('img[alt="Observação"]').src || '';
+    const previewNote = item.querySelectorAll('textarea.photo-note')[0]?.value || '';
+    const obsNote = item.querySelectorAll('textarea.photo-note')[1]?.value || '';
+
+    if(!title.trim() && !comment.trim() && !preview && !obs) return; // Ignorar vazio total
+
+    data.items.push({id, title, comment, status, preview, previewNote, obs, obsNote});
   });
-  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'checklist.json';
-  a.click();
+
+  localStorage.setItem('checklistData', JSON.stringify(data));
+  alert('Backup salvo com sucesso!');
 }
 
+// Carregar dados do localStorage
 function loadData() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json';
-  input.onchange = e => {
-    const reader = new FileReader();
-    reader.onload = event => {
-      const data = JSON.parse(event.target.result);
-      document.getElementById('tecnico').value = data.tecnico || '';
-      document.getElementById('matricula').value = data.matricula || '';
-      document.getElementById('data').value = data.data || '';
-      checklist.innerHTML = '';
-      itemCount = 0;
-      data.items.forEach(itemData => addItem(itemData));
-      if (data.signature) {
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img, 0, 0);
-        img.src = data.signature;
-      }
-    };
-    reader.readAsText(e.target.files[0]);
-  };
-  input.click();
-}
-
-function share() {
-  const text = `Checklist de Manutenção - Técnico: ${document.getElementById('tecnico').value}, Matrícula: ${document.getElementById('matricula').value}, Data: ${document.getElementById('data').value}.`;
-  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.open(url, '_blank');
-}
-
-function exportPDF() {
-  const tecnico = document.getElementById("tecnico").value;
-  const data = document.getElementById("data").value;
-  if (!tecnico || !data) {
-    alert("Preencha o nome do técnico e a data.");
+  const data = localStorage.getItem('checklistData');
+  if(!data) {
+    alert('Nenhum backup encontrado.');
     return;
   }
+  const obj = JSON.parse(data);
+
+  document.getElementById('tecnico').value = obj.tecnico || '';
+  document.getElementById('matricula').value = obj.matricula || '';
+  document.getElementById('data').value = obj.data || '';
+  clearChecklist();
+  if(obj.items && obj.items.length) {
+    obj.items.forEach(item => addItem(item));
+  }
+  if(obj.assinatura) {
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    img.src = obj.assinatura;
+  } else {
+    clearSignature();
+  }
+  updateProgress();
+}
+
+function clearChecklist() {
+  document.getElementById('checklist').innerHTML = '';
+  itemCount = 0;
+}
+
+// Exportar checklist em PDF
+function exportPDF() {
+  // Gera o PDF a partir do container principal
   const element = document.querySelector('.container');
   const opt = {
-    margin: 0.3,
-    filename: `Checklist_${tecnico}_${data}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, scrollY: 0 },
-    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    margin:       0.5,
+    filename:     'checklist.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
   };
-  html2pdf().from(element).set(opt).save();
+  html2pdf().set(opt).from(element).save();
 }
 
-// Canvas assinatura
-const canvas = document.getElementById('signature');
-const ctx = canvas.getContext('2d');
-let drawing = false;
-canvas.addEventListener('mousedown', () => drawing = true);
-canvas.addEventListener('mouseup', () => drawing = false);
-canvas.addEventListener('mousemove', draw);
-
-function draw(e) {
-  if (!drawing) return;
-  ctx.fillStyle = '#000';
-  ctx.beginPath();
-  ctx.arc(e.offsetX, e.offsetY, 2, 0, Math.PI * 2);
-  ctx.fill();
-}
-function clearSignature() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-// Zoom imagem
-document.addEventListener('click', function (e) {
-  if (e.target.tagName === 'IMG' && e.target.id.startsWith('preview')) {
-    const zoomOverlay = document.getElementById('zoomOverlay');
-    const zoomImage = document.getElementById('zoomImage');
-    zoomImage.src = e.target.src;
-    zoomOverlay.style.display = 'flex';
-  }
-});
-function closeZoom() {
-  document.getElementById('zoomOverlay').style.display = 'none';
-}
-
-// Tema
+// Alternar tema claro/escuro
 function toggleTheme() {
   const body = document.body;
-  const currentTheme = body.getAttribute('data-theme');
-  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-  body.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
+  if(body.dataset.theme === 'light') {
+    body.dataset.theme = 'dark';
+  } else {
+    body.dataset.theme = 'light';
+  }
 }
-window.onload = () => {
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme) document.body.setAttribute('data-theme', savedTheme);
-};
+
+// Função placeholder para compartilhar
+function share() {
+  alert('Função de compartilhamento ainda não implementada.');
+}
+
+// Inicialização - adicionar um item padrão
+addItem();
